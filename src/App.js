@@ -1,7 +1,6 @@
 import React, {useState , useEffect } from 'react'
 import { isEmpty, size } from 'lodash'
-import shortid from 'shortid'
-import { getCollection } from './actions'
+import { addDocument, getCollection, updateDocument,deleteDocument } from './actions'
 function App() {
   const [task, setTask] = useState("")
   const [tasks, setTasks] = useState([])
@@ -12,7 +11,10 @@ function App() {
   useEffect (()=>{
     (async()=>{
       const result = await getCollection("task")
-      console.log(result)
+      if(result.statusResponse){
+        console.log(result)
+        setTasks(result.data)
+      }
     })()
   },[])
   const validForm = ()=>{
@@ -27,12 +29,17 @@ function App() {
     return isvalid
   }
 
-  const addTask = (e) =>{
+  const addTask = async (e) =>{
     e.preventDefault()
     if(!validForm()) return
 
+    const result = await addDocument("task",{task})
+    if(!result.statusResponse){
+      setError(result.error)
+      return
+    }
     const newTask = {
-      id : shortid.generate(),
+      id : result.data.id,
       task
     }
 
@@ -41,19 +48,30 @@ function App() {
     setTask("")
   }
 
-  const saveTask = (e) =>{
+  const saveTask = async (e) =>{
     e.preventDefault()
     if(!validForm()) return
 
+    const result = await updateDocument("task",id,{task})
+    if(!result.statusResponse){
+      setError(result.error)
+      return
+    } 
     const editedTasks = tasks.map(item=>item.id === id? { id,task: task } : item)
     setTasks(editedTasks)
     setEditMode(false)
     setTask("")
     setId("")
+    console.log("Modificada")
     
   }
 
-  const deleteTask = (id)=>{
+  const deleteTask = async (id)=>{
+    const result = await deleteDocument("task",id)
+    if(!result.statusResponse){
+      setError(result.error)
+      return
+    } 
     const filterTask  = tasks.filter(task => task.id !== id)
     setTasks(filterTask)
   }
